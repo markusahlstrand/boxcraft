@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { Box } from "@/models/Box";
 
 interface BoxViewerProps {
   width: number;
@@ -87,66 +88,8 @@ const BoxViewer = ({
       sceneRef.current.remove(boxRef.current);
     }
 
-    const group = new THREE.Group();
-
-    // Front board
-    const frontGeometry = new THREE.BoxGeometry(
-      width / 100,
-      height / 100,
-      thickness / 100
-    );
-    const material = new THREE.MeshBasicMaterial({ color: 0x9b87f5 });
-    const frontBoard = new THREE.Mesh(frontGeometry, material);
-    frontBoard.position.z = depth / 200; // Half of depth
-    addEdges(frontBoard);
-    group.add(frontBoard);
-
-    // Back board
-    const backBoard = frontBoard.clone();
-    backBoard.position.z = -depth / 200;
-    addEdges(backBoard);
-    group.add(backBoard);
-
-    // Left board
-    const leftGeometry = new THREE.BoxGeometry(
-      thickness / 100,
-      height / 100,
-      depth / 100
-    );
-    const leftBoard = new THREE.Mesh(leftGeometry, material);
-    leftBoard.position.x = -width / 200;
-    addEdges(leftBoard);
-    group.add(leftBoard);
-
-    // Right board
-    const rightBoard = leftBoard.clone();
-    rightBoard.position.x = width / 200;
-    addEdges(rightBoard);
-    group.add(rightBoard);
-
-    // Top board
-    const topGeometry = new THREE.BoxGeometry(
-      width / 100,
-      thickness / 100,
-      depth / 100
-    );
-    const topBoard = new THREE.Mesh(topGeometry, material);
-    topBoard.position.y = height / 200;
-    addEdges(topBoard);
-    group.add(topBoard);
-
-    // Bottom board
-    const bottomBoard = topBoard.clone();
-    bottomBoard.position.y = -height / 200;
-    addEdges(bottomBoard);
-    group.add(bottomBoard);
-
-    function addEdges(board: THREE.Mesh) {
-      const edges = new THREE.EdgesGeometry(board.geometry);
-      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-      const wireframe = new THREE.LineSegments(edges, edgeMaterial);
-      board.add(wireframe);
-    }
+    const box = new Box({ width, height, depth, thickness, jointType });
+    const group = box.createMesh();
 
     boxRef.current = group;
     sceneRef.current.add(group);
