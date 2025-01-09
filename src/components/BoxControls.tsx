@@ -14,13 +14,15 @@ interface BoxControlsProps {
   width: number;
   height: number;
   depth: number;
-  jointType: 'flat' | 'finger';
-  units: 'mm' | 'inch';
+  thickness: number;
+  jointType: "flat" | "finger";
+  units: "mm" | "inch";
   onWidthChange: (width: number) => void;
   onHeightChange: (height: number) => void;
   onDepthChange: (depth: number) => void;
-  onJointTypeChange: (type: 'flat' | 'finger') => void;
-  onUnitsChange: (units: 'mm' | 'inch') => void;
+  onThicknessChange: (depth: number) => void;
+  onJointTypeChange: (type: "flat" | "finger") => void;
+  onUnitsChange: (units: "mm" | "inch") => void;
   onExport: () => void;
 }
 
@@ -28,11 +30,13 @@ const BoxControls = ({
   width,
   height,
   depth,
+  thickness,
   jointType,
   units,
   onWidthChange,
   onHeightChange,
   onDepthChange,
+  onThicknessChange,
   onJointTypeChange,
   onUnitsChange,
   onExport,
@@ -41,10 +45,13 @@ const BoxControls = ({
     <div className="box-controls p-6 rounded-lg space-y-6">
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-foreground">Box Dimensions</h2>
-        
+
         <div className="space-y-2">
           <Label htmlFor="units">Units</Label>
-          <Select value={units} onValueChange={(value: 'mm' | 'inch') => onUnitsChange(value)}>
+          <Select
+            value={units}
+            onValueChange={(value: "mm" | "inch") => onUnitsChange(value)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select units" />
             </SelectTrigger>
@@ -89,8 +96,24 @@ const BoxControls = ({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="thickness">Thickness ({units})</Label>
+          <Input
+            id="thickness"
+            type="number"
+            value={thickness}
+            onChange={(e) => onThicknessChange(Number(e.target.value))}
+            min={1}
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="jointType">Edge Joints</Label>
-          <Select value={jointType} onValueChange={(value: 'flat' | 'finger') => onJointTypeChange(value)}>
+          <Select
+            value={jointType}
+            onValueChange={(value: "flat" | "finger") =>
+              onJointTypeChange(value)
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select joint type" />
             </SelectTrigger>

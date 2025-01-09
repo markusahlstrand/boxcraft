@@ -8,25 +8,26 @@ const Index = () => {
   const [width, setWidth] = useState(100);
   const [height, setHeight] = useState(100);
   const [depth, setDepth] = useState(100);
-  const [jointType, setJointType] = useState<'flat' | 'finger'>('flat');
-  const [units, setUnits] = useState<'mm' | 'inch'>('mm');
+  const [thickness, setThickness] = useState(10);
+  const [jointType, setJointType] = useState<"flat" | "finger">("flat");
+  const [units, setUnits] = useState<"mm" | "inch">("mm");
   const { toast } = useToast();
 
   const handleExport = () => {
     const d = new Drawing();
-    
+
     // Create a simple box outline in DXF format
-    d.setUnits(units === 'mm' ? 'Millimeters' : 'Inches');
-    
+    d.setUnits(units === "mm" ? "Millimeters" : "Inches");
+
     // Front face
     d.drawRect(0, 0, width, height);
-    
+
     // Save the DXF file
-    const blob = new Blob([d.toDxfString()], { type: 'application/dxf' });
+    const blob = new Blob([d.toDxfString()], { type: "application/dxf" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'box.dxf';
+    a.download = "box.dxf";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -45,11 +46,13 @@ const Index = () => {
           width={width}
           height={height}
           depth={depth}
+          thickness={thickness}
           jointType={jointType}
           units={units}
           onWidthChange={setWidth}
           onHeightChange={setHeight}
           onDepthChange={setDepth}
+          onThicknessChange={setThickness}
           onJointTypeChange={setJointType}
           onUnitsChange={setUnits}
           onExport={handleExport}
@@ -60,6 +63,7 @@ const Index = () => {
           width={width}
           height={height}
           depth={depth}
+          thickness={thickness}
           jointType={jointType}
         />
       </div>

@@ -1,21 +1,28 @@
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 interface BoxViewerProps {
   width: number;
   height: number;
   depth: number;
-  jointType: 'flat' | 'finger';
+  thickness: number; // Add this
+  jointType: "flat" | "finger";
 }
 
-const BoxViewer = ({ width, height, depth, jointType }: BoxViewerProps) => {
+const BoxViewer = ({
+  width,
+  height,
+  depth,
+  thickness,
+  jointType,
+}: BoxViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const boxRef = useRef<THREE.Mesh | null>(null);
+  const boxRef = useRef<THREE.Mesh | THREE.Group | null>(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -23,7 +30,7 @@ const BoxViewer = ({ width, height, depth, jointType }: BoxViewerProps) => {
     // Scene setup
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.background = new THREE.Color('#1A1F2C');
+    scene.background = new THREE.Color("#1A1F2C");
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
@@ -33,12 +40,15 @@ const BoxViewer = ({ width, height, depth, jointType }: BoxViewerProps) => {
       1000
     );
     cameraRef.current = camera;
-    camera.position.z = 5;
+    camera.position.set(2, 2, 1);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     rendererRef.current = renderer;
-    renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+    renderer.setSize(
+      mountRef.current.clientWidth,
+      mountRef.current.clientHeight
+    );
     mountRef.current.appendChild(renderer.domElement);
 
     // Controls setup
@@ -77,20 +87,76 @@ const BoxViewer = ({ width, height, depth, jointType }: BoxViewerProps) => {
       sceneRef.current.remove(boxRef.current);
     }
 
-    const geometry = new THREE.BoxGeometry(width / 100, height / 100, depth / 100);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x9b87f5,
-      flatShading: jointType === 'flat',
-    });
-    const box = new THREE.Mesh(geometry, material);
-    boxRef.current = box;
-    sceneRef.current.add(box);
-  }, [width, height, depth, jointType]);
+    const group = new THREE.Group();
+
+    // Front board
+    const frontGeometry = new THREE.BoxGeometry(
+      width / 100,
+      height / 100,
+      thickness / 100
+    );
+    const material = new THREE.MeshBasicMaterial({ color: 0x9b87f5 });
+    const frontBoard = new THREE.Mesh(frontGeometry, material);
+    frontBoard.position.z = depth / 200; // Half of depth
+    addEdges(frontBoard);
+    group.add(frontBoard);
+
+    // Back board
+    const backBoard = frontBoard.clone();
+    backBoard.position.z = -depth / 200;
+    addEdges(backBoard);
+    group.add(backBoard);
+
+    // Left board
+    const leftGeometry = new THREE.BoxGeometry(
+      thickness / 100,
+      height / 100,
+      depth / 100
+    );
+    const leftBoard = new THREE.Mesh(leftGeometry, material);
+    leftBoard.position.x = -width / 200;
+    addEdges(leftBoard);
+    group.add(leftBoard);
+
+    // Right board
+    const rightBoard = leftBoard.clone();
+    rightBoard.position.x = width / 200;
+    addEdges(rightBoard);
+    group.add(rightBoard);
+
+    // Top board
+    const topGeometry = new THREE.BoxGeometry(
+      width / 100,
+      thickness / 100,
+      depth / 100
+    );
+    const topBoard = new THREE.Mesh(topGeometry, material);
+    topBoard.position.y = height / 200;
+    addEdges(topBoard);
+    group.add(topBoard);
+
+    // Bottom board
+    const bottomBoard = topBoard.clone();
+    bottomBoard.position.y = -height / 200;
+    addEdges(bottomBoard);
+    group.add(bottomBoard);
+
+    function addEdges(board: THREE.Mesh) {
+      const edges = new THREE.EdgesGeometry(board.geometry);
+      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+      const wireframe = new THREE.LineSegments(edges, edgeMaterial);
+      board.add(wireframe);
+    }
+
+    boxRef.current = group;
+    sceneRef.current.add(group);
+  }, [width, height, depth, thickness, jointType]);
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      if (!mountRef.current || !cameraRef.current || !rendererRef.current) return;
+      if (!mountRef.current || !cameraRef.current || !rendererRef.current)
+        return;
 
       cameraRef.current.aspect =
         mountRef.current.clientWidth / mountRef.current.clientHeight;
@@ -101,8 +167,8 @@ const BoxViewer = ({ width, height, depth, jointType }: BoxViewerProps) => {
       );
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return <div ref={mountRef} className="w-full h-full" />;
