@@ -34,6 +34,7 @@ const BoxViewer = ({
   const [selectedComponentName, setSelectedComponentName] = useState<
     string | null
   >(null);
+  const [showLegend, setShowLegend] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -139,6 +140,16 @@ const BoxViewer = ({
           opacity: 0.8,
         });
         targetMesh.material = highlightMaterial;
+
+        // Extract component name and show legend
+        const componentName =
+          targetMesh.userData.componentName || "Unknown Panel";
+        setSelectedComponentName(componentName);
+        setShowLegend(true);
+      } else {
+        // Clicked on empty space - hide legend
+        setShowLegend(false);
+        setSelectedComponentName(null);
       }
     };
 
@@ -213,7 +224,26 @@ const BoxViewer = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  return <div ref={mountRef} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mountRef} className="w-full h-full" />
+      {showLegend && selectedComponentName && (
+        <div className="absolute top-4 right-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-3 z-10">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-white text-sm">
+              {selectedComponentName}
+            </h3>
+            <button
+              onClick={() => setShowLegend(false)}
+              className="text-gray-400 hover:text-gray-200 text-sm ml-3"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default BoxViewer;
