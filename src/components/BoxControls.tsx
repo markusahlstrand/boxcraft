@@ -17,12 +17,14 @@ interface BoxControlsProps {
   thickness: number;
   jointType: "flat" | "finger";
   units: "mm" | "inch";
+  fingerSize: number;
   onWidthChange: (width: number) => void;
   onHeightChange: (height: number) => void;
   onDepthChange: (depth: number) => void;
   onThicknessChange: (depth: number) => void;
   onJointTypeChange: (type: "flat" | "finger") => void;
   onUnitsChange: (units: "mm" | "inch") => void;
+  onFingerSizeChange: (size: number) => void;
   onExport: () => void;
 }
 
@@ -33,12 +35,14 @@ const BoxControls = ({
   thickness,
   jointType,
   units,
+  fingerSize,
   onWidthChange,
   onHeightChange,
   onDepthChange,
   onThicknessChange,
   onJointTypeChange,
   onUnitsChange,
+  onFingerSizeChange,
   onExport,
 }: BoxControlsProps) => {
   return (
@@ -123,6 +127,19 @@ const BoxControls = ({
             </SelectContent>
           </Select>
         </div>
+
+        {jointType === "finger" && (
+          <div className="space-y-2">
+            <Label htmlFor="fingerSize">Finger Size ({units})</Label>
+            <Input
+              id="fingerSize"
+              type="number"
+              value={fingerSize}
+              onChange={(e) => onFingerSizeChange(Number(e.target.value))}
+              min={1}
+            />
+          </div>
+        )}
       </div>
 
       <Button className="w-full" onClick={onExport}>

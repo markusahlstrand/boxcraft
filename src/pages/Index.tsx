@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BoxViewer from "@/components/BoxViewer";
 import BoxControls from "@/components/BoxControls";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,7 +11,29 @@ const Index = () => {
   const [thickness, setThickness] = useState(10);
   const [jointType, setJointType] = useState<"flat" | "finger">("flat");
   const [units, setUnits] = useState<"mm" | "inch">("mm");
+  const [fingerSize, setFingerSize] = useState(() => {
+    const minSide = Math.min(width, height, depth);
+    return Math.round(minSide * 0.3);
+  });
   const { toast } = useToast();
+
+  // Update fingerSize default if dimensions change and fingerSize was not manually set
+  // Track if user has changed fingerSize
+  const [fingerSizeTouched, setFingerSizeTouched] = useState(false);
+
+  // Update fingerSize when dimensions change, unless user has set it
+  useEffect(() => {
+    if (!fingerSizeTouched) {
+      const minSide = Math.min(width, height, depth);
+      setFingerSize(Math.round(minSide * 0.3));
+    }
+  }, [width, height, depth, fingerSizeTouched]);
+
+  // Handler to set fingerSize and mark as touched
+  const handleFingerSizeChange = (size: number) => {
+    setFingerSize(size);
+    setFingerSizeTouched(true);
+  };
 
   const handleExport = () => {
     const d = new Drawing();
@@ -49,12 +71,14 @@ const Index = () => {
           thickness={thickness}
           jointType={jointType}
           units={units}
+          fingerSize={fingerSize}
           onWidthChange={setWidth}
           onHeightChange={setHeight}
           onDepthChange={setDepth}
           onThicknessChange={setThickness}
           onJointTypeChange={setJointType}
           onUnitsChange={setUnits}
+          onFingerSizeChange={handleFingerSizeChange}
           onExport={handleExport}
         />
       </div>
@@ -65,6 +89,7 @@ const Index = () => {
           depth={depth}
           thickness={thickness}
           jointType={jointType}
+          fingerSize={fingerSize}
         />
       </div>
     </div>
