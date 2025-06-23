@@ -1,69 +1,109 @@
-# Welcome to your Lovable project
+# Boxcraft
 
-## Project info
+A web application for designing simple 3D boxes with customizable dimensions, thickness, and edge joints. Users can preview their box in real-time 3D and export the design as a DXF file for manufacturing or laser cutting.
 
-**URL**: https://lovable.dev/projects/a889770a-150d-4d5b-bed0-ce54c248ecdd
+## Features
 
-## How can I edit this code?
+- **Interactive 3D Preview**: Real-time visualization of your box design using Three.js
+- **Customizable Parameters**: Adjust width, height, depth, thickness, units (mm/inch), and joint type (flat/finger joints)
+- **Live Updates**: See changes instantly as you modify parameters
+- **DXF Export**: Export your design for laser cutting or CNC machining. This might not be up to date..
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a889770a-150d-4d5b-bed0-ce54c248ecdd) and start prompting.
+- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repository-url>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd boxcraft
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Technology Stack
 
-**Use GitHub Codespaces**
+- **Vite** - Fast development and build tool
+- **TypeScript** - Type-safe JavaScript
+- **React** - UI framework
+- **Three.js** - 3D rendering and visualization
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn-ui** - Accessible UI components (built on Radix UI)
+- **dxf-writer** - DXF file generation for CAD export
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/
+│   ├── BoxControls.tsx    # Parameter controls sidebar
+│   ├── BoxViewer.tsx      # 3D rendering component
+│   └── ui/                # shadcn-ui components
+├── models/
+│   ├── Box.ts             # Box mesh generation logic
+│   └── FingerBoard.ts     # Finger joint calculations
+├── pages/
+│   └── Index.tsx          # Main application page
+└── hooks/
+    └── use-toast.ts       # Toast notification hook
+```
 
-This project is built with .
+## Usage
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Set Parameters**: Use the sidebar controls to adjust box dimensions, thickness, and joint type
+2. **Preview**: View your design in real-time 3D
+3. **Export**: Click "Export DXF" to download a file ready for laser cutting or CNC machining
 
-## How can I deploy this project?
+## Development
 
-Simply open [Lovable](https://lovable.dev/projects/a889770a-150d-4d5b-bed0-ce54c248ecdd) and click on Share -> Publish.
+The project uses modern development practices:
 
-## I want to use a custom domain - is that possible?
+- TypeScript for type safety
+- Component-based architecture
+- Real-time 3D updates
+- Accessible UI components
+- Toast notifications for user feedback
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Contributing
+
+Feel free to submit issues and enhancement requests!
+
+## Acknowledgments
+
+This project's initial structure was generated using Lovable, then extended and refined through collaborative coding with various AI assistants in VS Code.
+
+## License
+
+MIT License
+
+Copyright (c) 2025 Boxcraft
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
