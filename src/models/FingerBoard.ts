@@ -17,6 +17,254 @@ export interface FingerPatterns {
 
 export type FingerBoardSide = "front" | "back" | "left" | "right" | "bottom";
 
+/**
+ * Configuration for finger joint calculations
+ */
+export interface FingerJointConfig {
+  width: number;
+  height: number;
+  thickness: number;
+  fingerSize: number;
+  actualWidth?: number;
+}
+
+/**
+ * Calculated finger joint dimensions
+ */
+export interface FingerJointDimensions {
+  countX: number;
+  countY: number;
+  fingerWidth: number;
+  fingerHeight: number;
+  fingerAreaWidth: number;
+  fingerStartX: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  tScaled: number;
+}
+
+/**
+ * Calculate finger joint dimensions based on configuration
+ */
+export function calculateFingerJointDimensions(
+  config: FingerJointConfig
+): FingerJointDimensions {
+  const { width, height, thickness, fingerSize, actualWidth } = config;
+
+  const panelWidth = actualWidth || width;
+  const x0 = -panelWidth / 2 / 100;
+  const y0 = -height / 2 / 100;
+  const x1 = panelWidth / 2 / 100;
+  const y1 = height / 2 / 100;
+  const tScaled = thickness / 100;
+
+  // Calculate finger count to respect the desired finger size
+  // Each finger needs 2 * fingerSize (one for the finger, one for the gap)
+  // Plus we need one additional gap at the end
+  const countX = Math.max(
+    1,
+    Math.floor((width + fingerSize) / (2 * fingerSize))
+  );
+  const countY = Math.max(
+    1,
+    Math.floor((height + fingerSize) / (2 * fingerSize))
+  );
+
+  // Calculate precise finger and gap dimensions based on finger joint area
+  const totalSegmentsX = countX * 2 + 1;
+  const totalSegmentsY = countY * 2 + 1;
+
+  const fingerWidth = width / totalSegmentsX / 100; // Based on finger joint width
+  const fingerHeight = height / totalSegmentsY / 100;
+
+  // Calculate the offset for centering fingers on extended panels
+  const fingerAreaWidth = width / 100;
+  const fingerStartX = x0 + (panelWidth / 100 - fingerAreaWidth) / 2;
+
+  return {
+    countX,
+    countY,
+    fingerWidth,
+    fingerHeight,
+    fingerAreaWidth,
+    fingerStartX,
+    x0,
+    y0,
+    x1,
+    y1,
+    tScaled,
+  };
+}
+
+/**
+ * Generate finger/slot points for horizontal edges (top/bottom)
+ */
+export function generateHorizontalFingerPoints(
+  dimensions: FingerJointDimensions,
+  isExtended: boolean,
+  isTop: boolean,
+  hasFingers: boolean
+): { x: number; y: number }[] {
+  const { countX, fingerWidth, fingerStartX, x0, x1, y0, y1, tScaled } =
+    dimensions;
+  const points: { x: number; y: number }[] = [];
+
+  const yPos = isTop ? y1 : y0;
+  const fingerDirection = isTop ? 1 : -1; // +1 for top (upward), -1 for bottom (downward)
+
+  if (isExtended) {
+    // For extended panels, start from the finger area
+    let currentX = isTop
+      ? fingerStartX + dimensions.fingerAreaWidth
+      : fingerStartX;
+    const xDirection = isTop ? -1 : 1; // Top goes right to left, bottom goes left to right
+
+    if (!isTop) {
+      // Bottom edge: draw solid left extension first
+      points.push({ x: fingerStartX, y: yPos });
+    }
+
+    // Start with gap
+    currentX += xDirection * fingerWidth;
+    points.push({ x: currentX, y: yPos });
+
+    for (let i = 0; i < countX; i++) {
+      if (hasFingers) {
+        // Finger extends outward
+        points.push({ x: currentX, y: yPos + fingerDirection * tScaled });
+        points.push({
+          x: currentX + xDirection * fingerWidth,
+          y: yPos + fingerDirection * tScaled,
+        });
+        points.push({ x: currentX + xDirection * fingerWidth, y: yPos });
+      } else {
+        // Slot cuts inward
+        points.push({ x: currentX, y: yPos - fingerDirection * tScaled });
+        points.push({
+          x: currentX + xDirection * fingerWidth,
+          y: yPos - fingerDirection * tScaled,
+        });
+        points.push({ x: currentX + xDirection * fingerWidth, y: yPos });
+      }
+      currentX += xDirection * fingerWidth; // End of finger
+
+      if (i < countX - 1) {
+        // Gap between fingers
+        currentX += xDirection * fingerWidth;
+        points.push({ x: currentX, y: yPos });
+      }
+    }
+
+    // End with gap
+    currentX += xDirection * fingerWidth;
+    if (isTop) {
+      points.push({ x: x0, y: yPos });
+    } else {
+      points.push({ x: x1, y: yPos });
+    }
+  } else {
+    // Normal panel - fingers span full width
+    let currentX = isTop ? x1 : x0;
+    const xDirection = isTop ? -1 : 1; // Top goes right to left, bottom goes left to right
+
+    // Start with gap
+    currentX += xDirection * fingerWidth;
+    points.push({ x: currentX, y: yPos });
+
+    for (let i = 0; i < countX; i++) {
+      if (hasFingers) {
+        // Finger extends outward
+        points.push({ x: currentX, y: yPos + fingerDirection * tScaled });
+        points.push({
+          x: currentX + xDirection * fingerWidth,
+          y: yPos + fingerDirection * tScaled,
+        });
+        points.push({ x: currentX + xDirection * fingerWidth, y: yPos });
+      } else {
+        // Slot cuts inward
+        points.push({ x: currentX, y: yPos - fingerDirection * tScaled });
+        points.push({
+          x: currentX + xDirection * fingerWidth,
+          y: yPos - fingerDirection * tScaled,
+        });
+        points.push({ x: currentX + xDirection * fingerWidth, y: yPos });
+      }
+      currentX += xDirection * fingerWidth; // End of finger
+
+      if (i < countX - 1) {
+        // Gap between fingers
+        currentX += xDirection * fingerWidth;
+        points.push({ x: currentX, y: yPos });
+      }
+    }
+
+    // End with gap
+    currentX += xDirection * fingerWidth;
+    const endX = isTop ? x0 : x1;
+    points.push({ x: endX, y: yPos });
+  }
+
+  return points;
+}
+
+/**
+ * Generate finger/slot points for vertical edges (left/right)
+ */
+export function generateVerticalFingerPoints(
+  dimensions: FingerJointDimensions,
+  isRight: boolean,
+  hasFingers: boolean
+): { x: number; y: number }[] {
+  const { countY, fingerHeight, x0, x1, y0, y1, tScaled } = dimensions;
+  const points: { x: number; y: number }[] = [];
+
+  const xPos = isRight ? x1 : x0;
+  const fingerDirection = isRight ? 1 : -1; // +1 for right (rightward), -1 for left (leftward)
+  const yDirection = isRight ? 1 : -1; // Right goes bottom to top, left goes top to bottom
+
+  let currentY = isRight ? y0 : y1;
+
+  // Start with gap
+  currentY += yDirection * fingerHeight;
+  points.push({ x: xPos, y: currentY });
+
+  for (let i = 0; i < countY; i++) {
+    if (hasFingers) {
+      // Finger extends outward
+      points.push({ x: xPos + fingerDirection * tScaled, y: currentY });
+      points.push({
+        x: xPos + fingerDirection * tScaled,
+        y: currentY + yDirection * fingerHeight,
+      });
+      points.push({ x: xPos, y: currentY + yDirection * fingerHeight });
+    } else {
+      // Slot cuts inward
+      points.push({ x: xPos - fingerDirection * tScaled, y: currentY });
+      points.push({
+        x: xPos - fingerDirection * tScaled,
+        y: currentY + yDirection * fingerHeight,
+      });
+      points.push({ x: xPos, y: currentY + yDirection * fingerHeight });
+    }
+    currentY += yDirection * fingerHeight; // End of finger
+
+    if (i < countY - 1) {
+      // Gap between fingers
+      currentY += yDirection * fingerHeight;
+      points.push({ x: xPos, y: currentY });
+    }
+  }
+
+  // End with gap
+  currentY += yDirection * fingerHeight;
+  const endY = isRight ? y1 : y0;
+  points.push({ x: xPos, y: endY });
+
+  return points;
+}
+
 export class FingerBoard {
   constructor(private props: FingerBoardProps) {}
 
@@ -36,238 +284,57 @@ export class FingerBoard {
   ): THREE.Mesh {
     const shape = new THREE.Shape();
 
-    // Use actual width for panel geometry if provided, otherwise use w
-    const panelWidth = actualWidth || w;
-    const x0 = -panelWidth / 2 / 100;
-    const y0 = -h / 2 / 100;
-    const x1 = panelWidth / 2 / 100;
-    const y1 = h / 2 / 100;
-    const tScaled = t / 100;
+    // Calculate all finger joint dimensions
+    const dimensions = calculateFingerJointDimensions({
+      width: w,
+      height: h,
+      thickness: t,
+      fingerSize,
+      actualWidth,
+    });
 
-    // Calculate finger counts based on the finger joint dimensions (w, not actualWidth)
-    let countX: number;
-    let countY: number;
-
-    // Calculate finger count to respect the desired finger size
-    // Each finger needs 2 * fingerSize (one for the finger, one for the gap)
-    // Plus we need one additional gap at the end
-    countX = Math.max(1, Math.floor((w + fingerSize) / (2 * fingerSize)));
-
-    countY = Math.max(1, Math.floor((h + fingerSize) / (2 * fingerSize)));
-
-    // Calculate precise finger and gap dimensions based on finger joint area
-    const totalSegmentsX = countX * 2 + 1;
-    const totalSegmentsY = countY * 2 + 1;
-
-    const fingerWidth = w / totalSegmentsX / 100; // Based on finger joint width
-    const fingerHeight = h / totalSegmentsY / 100;
-
-    // Calculate the offset for centering fingers on extended panels
-    const fingerAreaWidth = w / 100;
-    const fingerStartX = x0 + (panelWidth / 100 - fingerAreaWidth) / 2;
-
-    shape.moveTo(x0, y0);
+    const { x0, y0, x1, y1 } = dimensions;
+    const isExtended = actualWidth && actualWidth > w;
 
     // Define finger patterns based on side
     const patterns = this.getFingerPatterns(side);
 
+    // Start shape at bottom-left
+    shape.moveTo(x0, y0);
+
     // Bottom edge (from left to right)
-    // For extended panels, draw solid edges then finger area in center
-    if (actualWidth && actualWidth > w) {
-      // Draw solid left extension
-      shape.lineTo(fingerStartX, y0);
-
-      // Draw finger area
-      let x = fingerStartX;
-      // Start with gap
-      x += fingerWidth;
-      shape.lineTo(x, y0);
-
-      for (let i = 0; i < countX; i++) {
-        if (patterns.bottom) {
-          // Finger extends outward (downward)
-          shape.lineTo(x, y0 - tScaled);
-          shape.lineTo(x + fingerWidth, y0 - tScaled);
-          shape.lineTo(x + fingerWidth, y0);
-        } else {
-          // Slot cuts inward (upward) - stays within the board
-          shape.lineTo(x, y0 + tScaled);
-          shape.lineTo(x + fingerWidth, y0 + tScaled);
-          shape.lineTo(x + fingerWidth, y0);
-        }
-        x += fingerWidth; // End of finger
-
-        if (i < countX - 1) {
-          // Gap between fingers
-          x += fingerWidth;
-          shape.lineTo(x, y0);
-        }
-      }
-
-      // End with gap and draw solid right extension
-      x += fingerWidth;
-      shape.lineTo(x1, y0);
-    } else {
-      // Normal panel - fingers span full width
-      let x = x0;
-      // Start with gap
-      x += fingerWidth;
-      shape.lineTo(x, y0);
-
-      for (let i = 0; i < countX; i++) {
-        if (patterns.bottom) {
-          // Finger extends outward (downward)
-          shape.lineTo(x, y0 - tScaled);
-          shape.lineTo(x + fingerWidth, y0 - tScaled);
-          shape.lineTo(x + fingerWidth, y0);
-        } else {
-          // Slot cuts inward (upward) - stays within the board
-          shape.lineTo(x, y0 + tScaled);
-          shape.lineTo(x + fingerWidth, y0 + tScaled);
-          shape.lineTo(x + fingerWidth, y0);
-        }
-        x += fingerWidth; // End of finger
-
-        if (i < countX - 1) {
-          // Gap between fingers
-          x += fingerWidth;
-          shape.lineTo(x, y0);
-        }
-      }
-
-      // End with gap
-      x += fingerWidth;
-      shape.lineTo(x1, y0);
-    }
+    const bottomPoints = generateHorizontalFingerPoints(
+      dimensions,
+      !!isExtended,
+      false, // isTop = false for bottom edge
+      patterns.bottom
+    );
+    bottomPoints.forEach((point) => shape.lineTo(point.x, point.y));
 
     // Right edge (from bottom to top)
-    let y = y0;
-
-    // Start with gap
-    y += fingerHeight;
-    shape.lineTo(x1, y);
-
-    for (let i = 0; i < countY; i++) {
-      if (patterns.right) {
-        // Finger extends outward (rightward)
-        shape.lineTo(x1 + tScaled, y);
-        shape.lineTo(x1 + tScaled, y + fingerHeight);
-        shape.lineTo(x1, y + fingerHeight);
-      } else {
-        // Slot cuts inward (leftward) - stays within the board
-        shape.lineTo(x1 - tScaled, y);
-        shape.lineTo(x1 - tScaled, y + fingerHeight);
-        shape.lineTo(x1, y + fingerHeight);
-      }
-      y += fingerHeight; // End of finger
-
-      if (i < countY - 1) {
-        // Gap between fingers
-        y += fingerHeight;
-        shape.lineTo(x1, y);
-      }
-    }
-
-    // End with gap
-    y += fingerHeight;
-    shape.lineTo(x1, y1);
+    const rightPoints = generateVerticalFingerPoints(
+      dimensions,
+      true, // isRight = true
+      patterns.right
+    );
+    rightPoints.forEach((point) => shape.lineTo(point.x, point.y));
 
     // Top edge (from right to left)
-    // For extended panels, draw solid edges then finger area in center
-    if (actualWidth && actualWidth > w) {
-      // Draw solid right extension to finger area
-      let topX = fingerStartX + fingerAreaWidth;
-      shape.lineTo(topX, y1);
-
-      // Draw finger area (right to left)
-      // Start with gap
-      topX -= fingerWidth;
-      shape.lineTo(topX, y1);
-
-      for (let i = 0; i < countX; i++) {
-        if (patterns.top) {
-          // Finger extends outward (upward)
-          shape.lineTo(topX, y1 + tScaled);
-          shape.lineTo(topX - fingerWidth, y1 + tScaled);
-          shape.lineTo(topX - fingerWidth, y1);
-        } else {
-          // Slot cuts inward (downward) - stays within the board
-          shape.lineTo(topX, y1 - tScaled);
-          shape.lineTo(topX - fingerWidth, y1 - tScaled);
-          shape.lineTo(topX - fingerWidth, y1);
-        }
-        topX -= fingerWidth; // End of finger
-
-        if (i < countX - 1) {
-          // Gap between fingers
-          topX -= fingerWidth;
-          shape.lineTo(topX, y1);
-        }
-      }
-
-      // End with gap and draw solid left extension
-      topX -= fingerWidth;
-      shape.lineTo(x0, y1);
-    } else {
-      // Normal panel - fingers span full width
-      let topX = x1;
-      // Start with gap
-      topX -= fingerWidth;
-      shape.lineTo(topX, y1);
-
-      for (let i = 0; i < countX; i++) {
-        if (patterns.top) {
-          // Finger extends outward (upward)
-          shape.lineTo(topX, y1 + tScaled);
-          shape.lineTo(topX - fingerWidth, y1 + tScaled);
-          shape.lineTo(topX - fingerWidth, y1);
-        } else {
-          // Slot cuts inward (downward) - stays within the board
-          shape.lineTo(topX, y1 - tScaled);
-          shape.lineTo(topX - fingerWidth, y1 - tScaled);
-          shape.lineTo(topX - fingerWidth, y1);
-        }
-        topX -= fingerWidth; // End of finger
-
-        if (i < countX - 1) {
-          // Gap between fingers
-          topX -= fingerWidth;
-          shape.lineTo(topX, y1);
-        }
-      }
-
-      // End with gap
-      topX -= fingerWidth;
-      shape.lineTo(x0, y1);
-    }
+    const topPoints = generateHorizontalFingerPoints(
+      dimensions,
+      !!isExtended,
+      true, // isTop = true for top edge
+      patterns.top
+    );
+    topPoints.forEach((point) => shape.lineTo(point.x, point.y));
 
     // Left edge (from top to bottom)
-    y = y1;
-
-    // Start with gap
-    y -= fingerHeight;
-    shape.lineTo(x0, y);
-
-    for (let i = 0; i < countY; i++) {
-      if (patterns.left) {
-        // Finger extends outward (leftward)
-        shape.lineTo(x0 - tScaled, y);
-        shape.lineTo(x0 - tScaled, y - fingerHeight);
-        shape.lineTo(x0, y - fingerHeight);
-      } else {
-        // Slot cuts inward (rightward) - stays within the board
-        shape.lineTo(x0 + tScaled, y);
-        shape.lineTo(x0 + tScaled, y - fingerHeight);
-        shape.lineTo(x0, y - fingerHeight);
-      }
-      y -= fingerHeight; // End of finger
-
-      if (i < countY - 1) {
-        // Gap between fingers
-        y -= fingerHeight;
-        shape.lineTo(x0, y);
-      }
-    }
+    const leftPoints = generateVerticalFingerPoints(
+      dimensions,
+      false, // isRight = false for left edge
+      patterns.left
+    );
+    leftPoints.forEach((point) => shape.lineTo(point.x, point.y));
 
     // The shape automatically closes back to the starting point (x0, y0)
 
