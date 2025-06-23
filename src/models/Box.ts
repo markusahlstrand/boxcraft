@@ -32,6 +32,7 @@ export class Box {
         depth: props.depth,
         thickness: props.thickness,
         fingerSize: props.fingerSize,
+        boxType: props.boxType,
       });
     }
   }
@@ -54,6 +55,10 @@ export class Box {
       opacity: 0.8,
     });
 
+    // Calculate effective height for side panels
+    // For open boxes, sides should be one thickness higher
+    const sideHeight = boxType === "open" ? height + thickness : height;
+
     // Define all components with their specifications
     const components: ComponentSpec[] = [
       // Front panel
@@ -61,17 +66,17 @@ export class Box {
         name: "Front Panel",
         side: "front",
         fingerWidth: width - 2 * thickness,
-        fingerHeight: height,
+        fingerHeight: sideHeight,
         actualWidth: width,
         flatGeometry: () =>
           new THREE.BoxGeometry(
             (width - 2 * thickness) / 100,
-            (height - thickness) / 100,
+            (sideHeight - thickness) / 100,
             thickness / 100
           ),
         flatPosition: new THREE.Vector3(
           0,
-          thickness / 200,
+          boxType === "open" ? (thickness * 1.5) / 200 : thickness / 200,
           (depth - thickness) / 200
         ),
       },
@@ -80,17 +85,17 @@ export class Box {
         name: "Back Panel",
         side: "back",
         fingerWidth: width - 2 * thickness,
-        fingerHeight: height,
+        fingerHeight: sideHeight,
         actualWidth: width,
         flatGeometry: () =>
           new THREE.BoxGeometry(
             (width - 2 * thickness) / 100,
-            (height - thickness) / 100,
+            (sideHeight - thickness) / 100,
             thickness / 100
           ),
         flatPosition: new THREE.Vector3(
           0,
-          thickness / 200,
+          boxType === "open" ? (thickness * 1.5) / 200 : thickness / 200,
           -(depth - thickness) / 200
         ),
       },
@@ -99,16 +104,16 @@ export class Box {
         name: "Left Panel",
         side: "left",
         fingerWidth: depth - 2 * thickness,
-        fingerHeight: height,
+        fingerHeight: sideHeight,
         flatGeometry: () =>
           new THREE.BoxGeometry(
             thickness / 100,
-            (height - thickness) / 100,
+            (sideHeight - thickness) / 100,
             depth / 100
           ),
         flatPosition: new THREE.Vector3(
           -(width - thickness) / 200,
-          thickness / 200,
+          boxType === "open" ? (thickness * 1.5) / 200 : thickness / 200,
           0
         ),
       },
@@ -117,16 +122,16 @@ export class Box {
         name: "Right Panel",
         side: "right",
         fingerWidth: depth - 2 * thickness,
-        fingerHeight: height,
+        fingerHeight: sideHeight,
         flatGeometry: () =>
           new THREE.BoxGeometry(
             thickness / 100,
-            (height - thickness) / 100,
+            (sideHeight - thickness) / 100,
             depth / 100
           ),
         flatPosition: new THREE.Vector3(
           (width - thickness) / 200,
-          thickness / 200,
+          boxType === "open" ? (thickness * 1.5) / 200 : thickness / 200,
           0
         ),
       },
@@ -138,7 +143,7 @@ export class Box {
         fingerHeight: depth - 2 * thickness,
         flatGeometry: () =>
           new THREE.BoxGeometry(width / 100, thickness / 100, depth / 100),
-        flatPosition: new THREE.Vector3(0, -(height - thickness) / 200, 0),
+        flatPosition: new THREE.Vector3(0, -(sideHeight - thickness) / 200, 0),
       },
     ];
 
@@ -151,7 +156,7 @@ export class Box {
         fingerHeight: depth - 2 * thickness,
         flatGeometry: () =>
           new THREE.BoxGeometry(width / 100, thickness / 100, depth / 100),
-        flatPosition: new THREE.Vector3(0, (height - thickness) / 200, 0),
+        flatPosition: new THREE.Vector3(0, (height + thickness) / 200, 0),
       });
     }
 
@@ -175,6 +180,17 @@ export class Box {
           material,
           component.actualWidth
         );
+
+        // For open boxes with finger joints, adjust the bottom panel position
+        if (boxType === "open" && component.side === "bottom") {
+          // Move the bottom panel down by half thickness to account for taller sides
+          mesh.position.y -= thickness / 200;
+        }
+
+        // For closed boxes with finger joints, adjust the top panel position
+        if (boxType === "closed" && component.side === "top") {
+          mesh.position.y += (2 * thickness) / 200;
+        }
       } else {
         // Create flat joint component
         const geometry = component.flatGeometry();

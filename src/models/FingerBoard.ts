@@ -6,6 +6,7 @@ export interface FingerBoardProps {
   depth: number;
   thickness: number;
   fingerSize: number;
+  boxType?: "open" | "closed";
 }
 
 export interface FingerPatterns {
@@ -299,7 +300,7 @@ export class FingerBoard {
       actualWidth,
     });
 
-    const { x0, y0, x1, y1 } = dimensions;
+    const { x0, y0 } = dimensions;
     const isExtended = actualWidth && actualWidth > w;
 
     // Define finger patterns based on side
@@ -326,13 +327,20 @@ export class FingerBoard {
     rightPoints.forEach((point) => shape.lineTo(point.x, point.y));
 
     // Top edge (from right to left)
-    const topPoints = generateHorizontalFingerPoints(
-      dimensions,
-      !!isExtended,
-      true, // isTop = true for top edge
-      patterns.top
-    );
-    topPoints.forEach((point) => shape.lineTo(point.x, point.y));
+    if (patterns.top === false && this.props.boxType === "open") {
+      // For open boxes, create a straight line on top (no fingers or slots)
+      const { x0, y1 } = dimensions;
+      shape.lineTo(x0, y1);
+    } else {
+      // Normal finger/slot pattern
+      const topPoints = generateHorizontalFingerPoints(
+        dimensions,
+        !!isExtended,
+        true, // isTop = true for top edge
+        patterns.top
+      );
+      topPoints.forEach((point) => shape.lineTo(point.x, point.y));
+    }
 
     // Left edge (from top to bottom)
     const leftPoints = generateVerticalFingerPoints(
@@ -415,40 +423,22 @@ export class FingerBoard {
   private getFingerPatterns(side: FingerBoardSide): FingerPatterns {
     switch (side) {
       case "front":
-        return {
-          top: false, // slots on top to mate with top panel
-          right: false, // slots on right to mate with left/right panels
-          bottom: false, // slots on bottom to mate with bottom panel
-          left: false, // slots on left to mate with left/right panels
-        };
       case "back":
         return {
-          top: false, // slots on top to mate with top panel
+          top: false, // no slots on top for open boxes, slots for closed boxes to mate with top panel
           right: false, // slots on right to mate with left/right panels
           bottom: false, // slots on bottom to mate with bottom panel
           left: false, // slots on left to mate with left/right panels
         };
       case "left":
-        return {
-          top: false, // slots on top to mate with top panel
-          right: true, // fingers on right
-          bottom: false, // slots on bottom to mate with bottom panel
-          left: true, // fingers on left
-        };
       case "right":
         return {
-          top: false, // slots on top to mate with top panel
+          top: false, // no slots on top for open boxes, slots for closed boxes to mate with top panel
           right: true, // fingers on right
           bottom: false, // slots on bottom to mate with bottom panel
           left: true, // fingers on left
         };
       case "bottom":
-        return {
-          top: true, // fingers on all edges to mate with vertical panels
-          right: true,
-          bottom: true,
-          left: true,
-        };
       case "top":
         return {
           top: true, // fingers on all edges to mate with vertical panels
