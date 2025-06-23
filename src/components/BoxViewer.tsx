@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 // @ts-ignore: Importing JS module with types provided by @types/three
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -31,6 +31,9 @@ const BoxViewer = ({
   const originalMaterialRef = useRef<THREE.Material | THREE.Material[] | null>(
     null
   );
+  const [selectedComponentName, setSelectedComponentName] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!mountRef.current) return;
