@@ -26,27 +26,29 @@ export class Box {
     if (jointType === "finger" && fingerSize && fingerSize > 0) {
       // Use finger joint geometry for all sides with proper sizing compensation
 
-      // Front panel: full width to reach outer edges, full height
+      // Front panel: full width for proper enclosure, but finger joints based on reduced width
       group.add(
         this.createFingerBoard(
-          width,
+          width - 2 * thickness, // finger joint width (to match bottom panel)
           height,
           thickness,
           "front",
           fingerSize,
-          material
+          material,
+          width // actual panel width for geometry
         )
       );
 
-      // Back panel: full width to reach outer edges, full height
+      // Back panel: full width for proper enclosure, but finger joints based on reduced width
       group.add(
         this.createFingerBoard(
-          width,
+          width - 2 * thickness, // finger joint width (to match bottom panel)
           height,
           thickness,
           "back",
           fingerSize,
-          material
+          material,
+          width // actual panel width for geometry
         )
       );
 
@@ -147,6 +149,7 @@ export class Box {
   /**
    * Create a board with finger joints on the edges.
    * side: 'front' | 'back' | 'left' | 'right' | 'bottom'
+   * actualWidth: optional override for the actual panel width (for extended panels)
    */
   private createFingerBoard(
     w: number,
@@ -154,45 +157,40 @@ export class Box {
     t: number,
     side: string,
     fingerSize: number,
-    material: THREE.Material
+    material: THREE.Material,
+    actualWidth?: number
   ) {
     const shape = new THREE.Shape();
-    const x0 = -w / 2 / 100;
+
+    // Use actual width for panel geometry if provided, otherwise use w
+    const panelWidth = actualWidth || w;
+    const x0 = -panelWidth / 2 / 100;
     const y0 = -h / 2 / 100;
-    const x1 = w / 2 / 100;
+    const x1 = panelWidth / 2 / 100;
     const y1 = h / 2 / 100;
     const tScaled = t / 100;
 
-    // Calculate finger counts based on consistent reference dimensions for mating edges
-    // Use the bottom panel's dimensions as reference since it determines the joint spacing
-    let refWidth = this.props.width - 2 * this.props.thickness; // Bottom panel width
-    let refDepth = this.props.depth - 2 * this.props.thickness; // Bottom panel depth
+    // Calculate finger counts based on the finger joint dimensions (w, not actualWidth)
+    let countX: number;
+    let countY: number;
 
-    // For width-direction fingers (front/back panels and bottom panel front/back edges)
-    let countX = Math.floor(refWidth / fingerSize);
+    // Use the finger joint width (w) for finger count calculation
+    countX = Math.floor(w / fingerSize);
     if (countX % 2 === 0) countX++;
 
-    // For depth-direction fingers (left/right panels and bottom panel left/right edges)
-    let countY = Math.floor(refDepth / fingerSize);
+    countY = Math.floor(h / fingerSize);
     if (countY % 2 === 0) countY++;
 
-    // Override for panels that need height-based finger calculation (vertical edges)
-    if ((side === "front" || side === "back") && w !== refWidth) {
-      // This is for the vertical edges of front/back panels
-      countY = Math.floor(h / fingerSize);
-      if (countY % 2 === 0) countY++;
-    }
-    if ((side === "left" || side === "right") && w !== refDepth) {
-      // This is for the vertical edges of left/right panels
-      countY = Math.floor(h / fingerSize);
-      if (countY % 2 === 0) countY++;
-    }
+    // Calculate precise finger and gap dimensions based on finger joint area
+    const totalSegmentsX = countX * 2 + 1;
+    const totalSegmentsY = countY * 2 + 1;
 
-    // Adjust for proper centering with half-spaces at edges
-    const totalSpacesX = countX + 1; // countX fingers + (countX+1) spaces
-    const totalSpacesY = countY + 1; // countY fingers + (countY+1) spaces
-    const fx = w / totalSpacesX / 100;
-    const fy = h / totalSpacesY / 100;
+    const fingerWidth = w / totalSegmentsX / 100; // Based on finger joint width
+    const fingerHeight = h / totalSegmentsY / 100;
+
+    // Calculate the offset for centering fingers on extended panels
+    const fingerAreaWidth = w / 100;
+    const fingerStartX = x0 + (panelWidth / 100 - fingerAreaWidth) / 2;
 
     shape.moveTo(x0, y0);
 
@@ -200,127 +198,199 @@ export class Box {
     const patterns = this.getFingerPatterns(side);
 
     // Bottom edge (from left to right)
-    let x = x0;
-    const segmentWidth = (x1 - x0) / (countX * 2 + 1); // Total segments: countX fingers + (countX+1) gaps
+    // For extended panels, draw solid edges then finger area in center
+    if (actualWidth && actualWidth > w) {
+      // Draw solid left extension
+      shape.lineTo(fingerStartX, y0);
 
-    // Start with half gap
-    x += segmentWidth;
-    shape.lineTo(x, y0);
+      // Draw finger area
+      let x = fingerStartX;
+      // Start with gap
+      x += fingerWidth;
+      shape.lineTo(x, y0);
 
-    for (let i = 0; i < countX; i++) {
-      if (patterns.bottom) {
-        // Finger extends outward (downward)
-        shape.lineTo(x, y0 - tScaled);
-        shape.lineTo(x + segmentWidth, y0 - tScaled);
-        shape.lineTo(x + segmentWidth, y0);
-      } else {
-        // Slot cuts inward (upward) - stays within the board
-        shape.lineTo(x, y0 + tScaled);
-        shape.lineTo(x + segmentWidth, y0 + tScaled);
-        shape.lineTo(x + segmentWidth, y0);
+      for (let i = 0; i < countX; i++) {
+        if (patterns.bottom) {
+          // Finger extends outward (downward)
+          shape.lineTo(x, y0 - tScaled);
+          shape.lineTo(x + fingerWidth, y0 - tScaled);
+          shape.lineTo(x + fingerWidth, y0);
+        } else {
+          // Slot cuts inward (upward) - stays within the board
+          shape.lineTo(x, y0 + tScaled);
+          shape.lineTo(x + fingerWidth, y0 + tScaled);
+          shape.lineTo(x + fingerWidth, y0);
+        }
+        x += fingerWidth; // End of finger
+
+        if (i < countX - 1) {
+          // Gap between fingers
+          x += fingerWidth;
+          shape.lineTo(x, y0);
+        }
       }
-      x += segmentWidth; // End of finger
 
-      if (i < countX - 1) {
-        // Gap between fingers
-        x += segmentWidth;
-        shape.lineTo(x, y0);
+      // End with gap and draw solid right extension
+      x += fingerWidth;
+      shape.lineTo(x1, y0);
+    } else {
+      // Normal panel - fingers span full width
+      let x = x0;
+      // Start with gap
+      x += fingerWidth;
+      shape.lineTo(x, y0);
+
+      for (let i = 0; i < countX; i++) {
+        if (patterns.bottom) {
+          // Finger extends outward (downward)
+          shape.lineTo(x, y0 - tScaled);
+          shape.lineTo(x + fingerWidth, y0 - tScaled);
+          shape.lineTo(x + fingerWidth, y0);
+        } else {
+          // Slot cuts inward (upward) - stays within the board
+          shape.lineTo(x, y0 + tScaled);
+          shape.lineTo(x + fingerWidth, y0 + tScaled);
+          shape.lineTo(x + fingerWidth, y0);
+        }
+        x += fingerWidth; // End of finger
+
+        if (i < countX - 1) {
+          // Gap between fingers
+          x += fingerWidth;
+          shape.lineTo(x, y0);
+        }
       }
+
+      // End with gap
+      x += fingerWidth;
+      shape.lineTo(x1, y0);
     }
-
-    // End with half gap
-    x += segmentWidth;
-    shape.lineTo(x1, y0);
 
     // Right edge (from bottom to top)
     let y = y0;
-    const segmentHeight = (y1 - y0) / (countY * 2 + 1); // Total segments: countY fingers + (countY+1) gaps
 
-    // Start with half gap
-    y += segmentHeight;
+    // Start with gap
+    y += fingerHeight;
     shape.lineTo(x1, y);
 
     for (let i = 0; i < countY; i++) {
       if (patterns.right) {
         // Finger extends outward (rightward)
         shape.lineTo(x1 + tScaled, y);
-        shape.lineTo(x1 + tScaled, y + segmentHeight);
-        shape.lineTo(x1, y + segmentHeight);
+        shape.lineTo(x1 + tScaled, y + fingerHeight);
+        shape.lineTo(x1, y + fingerHeight);
       } else {
         // Slot cuts inward (leftward) - stays within the board
         shape.lineTo(x1 - tScaled, y);
-        shape.lineTo(x1 - tScaled, y + segmentHeight);
-        shape.lineTo(x1, y + segmentHeight);
+        shape.lineTo(x1 - tScaled, y + fingerHeight);
+        shape.lineTo(x1, y + fingerHeight);
       }
-      y += segmentHeight; // End of finger
+      y += fingerHeight; // End of finger
 
       if (i < countY - 1) {
         // Gap between fingers
-        y += segmentHeight;
+        y += fingerHeight;
         shape.lineTo(x1, y);
       }
     }
 
-    // End with half gap
-    y += segmentHeight;
+    // End with gap
+    y += fingerHeight;
     shape.lineTo(x1, y1);
 
     // Top edge (from right to left)
-    x = x1;
+    // For extended panels, draw solid edges then finger area in center
+    if (actualWidth && actualWidth > w) {
+      // Draw solid right extension to finger area
+      let topX = fingerStartX + fingerAreaWidth;
+      shape.lineTo(topX, y1);
 
-    // Start with half gap
-    x -= segmentWidth;
-    shape.lineTo(x, y1);
+      // Draw finger area (right to left)
+      // Start with gap
+      topX -= fingerWidth;
+      shape.lineTo(topX, y1);
 
-    for (let i = 0; i < countX; i++) {
-      if (patterns.top) {
-        // Finger extends outward (upward)
-        shape.lineTo(x, y1 + tScaled);
-        shape.lineTo(x - segmentWidth, y1 + tScaled);
-        shape.lineTo(x - segmentWidth, y1);
-      } else {
-        // Slot cuts inward (downward) - stays within the board
-        shape.lineTo(x, y1 - tScaled);
-        shape.lineTo(x - segmentWidth, y1 - tScaled);
-        shape.lineTo(x - segmentWidth, y1);
+      for (let i = 0; i < countX; i++) {
+        if (patterns.top) {
+          // Finger extends outward (upward)
+          shape.lineTo(topX, y1 + tScaled);
+          shape.lineTo(topX - fingerWidth, y1 + tScaled);
+          shape.lineTo(topX - fingerWidth, y1);
+        } else {
+          // Slot cuts inward (downward) - stays within the board
+          shape.lineTo(topX, y1 - tScaled);
+          shape.lineTo(topX - fingerWidth, y1 - tScaled);
+          shape.lineTo(topX - fingerWidth, y1);
+        }
+        topX -= fingerWidth; // End of finger
+
+        if (i < countX - 1) {
+          // Gap between fingers
+          topX -= fingerWidth;
+          shape.lineTo(topX, y1);
+        }
       }
-      x -= segmentWidth; // End of finger
 
-      if (i < countX - 1) {
-        // Gap between fingers
-        x -= segmentWidth;
-        shape.lineTo(x, y1);
+      // End with gap and draw solid left extension
+      topX -= fingerWidth;
+      shape.lineTo(x0, y1);
+    } else {
+      // Normal panel - fingers span full width
+      let topX = x1;
+      // Start with gap
+      topX -= fingerWidth;
+      shape.lineTo(topX, y1);
+
+      for (let i = 0; i < countX; i++) {
+        if (patterns.top) {
+          // Finger extends outward (upward)
+          shape.lineTo(topX, y1 + tScaled);
+          shape.lineTo(topX - fingerWidth, y1 + tScaled);
+          shape.lineTo(topX - fingerWidth, y1);
+        } else {
+          // Slot cuts inward (downward) - stays within the board
+          shape.lineTo(topX, y1 - tScaled);
+          shape.lineTo(topX - fingerWidth, y1 - tScaled);
+          shape.lineTo(topX - fingerWidth, y1);
+        }
+        topX -= fingerWidth; // End of finger
+
+        if (i < countX - 1) {
+          // Gap between fingers
+          topX -= fingerWidth;
+          shape.lineTo(topX, y1);
+        }
       }
+
+      // End with gap
+      topX -= fingerWidth;
+      shape.lineTo(x0, y1);
     }
-
-    // End with half gap
-    x -= segmentWidth;
-    shape.lineTo(x0, y1);
 
     // Left edge (from top to bottom)
     y = y1;
 
-    // Start with half gap
-    y -= segmentHeight;
+    // Start with gap
+    y -= fingerHeight;
     shape.lineTo(x0, y);
 
     for (let i = 0; i < countY; i++) {
       if (patterns.left) {
         // Finger extends outward (leftward)
         shape.lineTo(x0 - tScaled, y);
-        shape.lineTo(x0 - tScaled, y - segmentHeight);
-        shape.lineTo(x0, y - segmentHeight);
+        shape.lineTo(x0 - tScaled, y - fingerHeight);
+        shape.lineTo(x0, y - fingerHeight);
       } else {
         // Slot cuts inward (rightward) - stays within the board
         shape.lineTo(x0 + tScaled, y);
-        shape.lineTo(x0 + tScaled, y - segmentHeight);
-        shape.lineTo(x0, y - segmentHeight);
+        shape.lineTo(x0 + tScaled, y - fingerHeight);
+        shape.lineTo(x0, y - fingerHeight);
       }
-      y -= segmentHeight; // End of finger
+      y -= fingerHeight; // End of finger
 
       if (i < countY - 1) {
         // Gap between fingers
-        y -= segmentHeight;
+        y -= fingerHeight;
         shape.lineTo(x0, y);
       }
     }
