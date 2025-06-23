@@ -7,6 +7,7 @@ interface BoxProps {
   depth: number;
   thickness: number;
   jointType: "flat" | "finger";
+  boxType?: "open" | "closed";
   fingerSize?: number;
 }
 
@@ -36,8 +37,15 @@ export class Box {
   }
 
   createMesh(): THREE.Group {
-    const { width, height, depth, thickness, jointType, fingerSize } =
-      this.props;
+    const {
+      width,
+      height,
+      depth,
+      thickness,
+      jointType,
+      boxType = "closed",
+      fingerSize,
+    } = this.props;
     const group = new THREE.Group();
     const material = new THREE.MeshBasicMaterial({
       color: 0x9b87f5,
@@ -133,6 +141,19 @@ export class Box {
         flatPosition: new THREE.Vector3(0, -(height - thickness) / 200, 0),
       },
     ];
+
+    // Add top panel only for closed boxes
+    if (boxType === "closed") {
+      components.push({
+        name: "Top Panel",
+        side: "top",
+        fingerWidth: width - 2 * thickness,
+        fingerHeight: depth - 2 * thickness,
+        flatGeometry: () =>
+          new THREE.BoxGeometry(width / 100, thickness / 100, depth / 100),
+        flatPosition: new THREE.Vector3(0, (height - thickness) / 200, 0),
+      });
+    }
 
     // Create components based on joint type
     components.forEach((component) => {

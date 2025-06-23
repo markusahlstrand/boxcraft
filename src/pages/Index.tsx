@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import BoxViewer from "@/components/BoxViewer";
 import BoxControls from "@/components/BoxControls";
 import { useToast } from "@/components/ui/use-toast";
+import { Github } from "lucide-react";
 import Drawing from "dxf-writer";
 
 const Index = () => {
@@ -10,6 +11,7 @@ const Index = () => {
   const [depth, setDepth] = useState(100);
   const [thickness, setThickness] = useState(10);
   const [jointType, setJointType] = useState<"flat" | "finger">("flat");
+  const [boxType, setBoxType] = useState<"open" | "closed">("closed");
   const [units, setUnits] = useState<"mm" | "inch">("mm");
   const [fingerSize, setFingerSize] = useState(() => {
     const minSide = Math.min(width, height, depth);
@@ -62,7 +64,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative">
       <div className="w-80 p-4 border-r border-border">
         <BoxControls
           width={width}
@@ -70,6 +72,7 @@ const Index = () => {
           depth={depth}
           thickness={thickness}
           jointType={jointType}
+          boxType={boxType}
           units={units}
           fingerSize={fingerSize}
           onWidthChange={setWidth}
@@ -77,6 +80,7 @@ const Index = () => {
           onDepthChange={setDepth}
           onThicknessChange={setThickness}
           onJointTypeChange={setJointType}
+          onBoxTypeChange={setBoxType}
           onUnitsChange={setUnits}
           onFingerSizeChange={handleFingerSizeChange}
           onExport={handleExport}
@@ -89,9 +93,21 @@ const Index = () => {
           depth={depth}
           thickness={thickness}
           jointType={jointType}
+          boxType={boxType}
           fingerSize={fingerSize}
         />
       </div>
+
+      {/* GitHub link at bottom left */}
+      <a
+        href="https://github.com/markusahlstrand/boxcraft"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 left-4 p-2 bg-background border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-colors shadow-sm"
+        title="View on GitHub"
+      >
+        <Github className="h-5 w-5" />
+      </a>
     </div>
   );
 };

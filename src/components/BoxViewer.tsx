@@ -10,6 +10,7 @@ interface BoxViewerProps {
   depth: number;
   thickness: number;
   jointType: "flat" | "finger";
+  boxType: "open" | "closed";
   fingerSize?: number;
 }
 
@@ -19,6 +20,7 @@ const BoxViewer = ({
   depth,
   thickness,
   jointType,
+  boxType,
   fingerSize,
 }: BoxViewerProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -197,13 +199,14 @@ const BoxViewer = ({
       depth,
       thickness,
       jointType,
+      boxType,
       fingerSize,
     });
     const group = box.createMesh();
 
     boxRef.current = group;
     sceneRef.current.add(group);
-  }, [width, height, depth, thickness, jointType, fingerSize]);
+  }, [width, height, depth, thickness, jointType, boxType, fingerSize]);
 
   // Handle window resize
   useEffect(() => {

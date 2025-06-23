@@ -16,6 +16,7 @@ interface BoxControlsProps {
   depth: number;
   thickness: number;
   jointType: "flat" | "finger";
+  boxType: "open" | "closed";
   units: "mm" | "inch";
   fingerSize: number;
   onWidthChange: (width: number) => void;
@@ -23,6 +24,7 @@ interface BoxControlsProps {
   onDepthChange: (depth: number) => void;
   onThicknessChange: (depth: number) => void;
   onJointTypeChange: (type: "flat" | "finger") => void;
+  onBoxTypeChange: (type: "open" | "closed") => void;
   onUnitsChange: (units: "mm" | "inch") => void;
   onFingerSizeChange: (size: number) => void;
   onExport: () => void;
@@ -34,6 +36,7 @@ const BoxControls = ({
   depth,
   thickness,
   jointType,
+  boxType,
   units,
   fingerSize,
   onWidthChange,
@@ -41,6 +44,7 @@ const BoxControls = ({
   onDepthChange,
   onThicknessChange,
   onJointTypeChange,
+  onBoxTypeChange,
   onUnitsChange,
   onFingerSizeChange,
   onExport,
@@ -62,6 +66,22 @@ const BoxControls = ({
             <SelectContent>
               <SelectItem value="mm">Millimeters</SelectItem>
               <SelectItem value="inch">Inches</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="boxType">Box Type</Label>
+          <Select
+            value={boxType}
+            onValueChange={(value: "open" | "closed") => onBoxTypeChange(value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select box type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="closed">Closed Box</SelectItem>
+              <SelectItem value="open">Open Box</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -15,7 +15,13 @@ export interface FingerPatterns {
   left: boolean;
 }
 
-export type FingerBoardSide = "front" | "back" | "left" | "right" | "bottom";
+export type FingerBoardSide =
+  | "front"
+  | "back"
+  | "left"
+  | "right"
+  | "bottom"
+  | "top";
 
 /**
  * Configuration for finger joint calculations
@@ -391,6 +397,11 @@ export class FingerBoard {
         // moves the panel down by thickness/2, closing the gap to the actual bottom
         mesh.position.y = -(this.props.height / 2 - t) / 100;
         break;
+      case "top":
+        mesh.rotation.x = Math.PI / 2;
+        // Top panel: positioned at top with proper clearance for finger joints
+        mesh.position.y = (this.props.height / 2 - t) / 100;
+        break;
     }
 
     this.addEdges(mesh);
@@ -432,6 +443,13 @@ export class FingerBoard {
           left: true, // fingers on left
         };
       case "bottom":
+        return {
+          top: true, // fingers on all edges to mate with vertical panels
+          right: true,
+          bottom: true,
+          left: true,
+        };
+      case "top":
         return {
           top: true, // fingers on all edges to mate with vertical panels
           right: true,
